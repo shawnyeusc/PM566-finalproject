@@ -150,12 +150,8 @@ p1_scatter <- cv_states_today %>%
 # filter out "District of Columbia"
 cv_states_today_scatter <- cv_states_today %>% filter(state!="District of Columbia")
 
-p2_scatter <- cv_states_today_scatter %>%
-```
-
-
-```{r,echo=FALSE}
-plot_ly(x = ~pop_density, y = ~deathsper100k,
+p2_scatter <- cv_states_today_scatter %>% 
+  plot_ly(x = ~pop_density, y = ~deathsper100k,
           type = 'scatter', mode = 'markers', color = ~state,
           size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5),
           hoverinfo = 'text',
@@ -176,8 +172,5 @@ p1_scatter
 
 ```{r echo=FALSE}
 p2_scatter
-```
-```{r}
-rmarkdown::render_site()
 ```
 
