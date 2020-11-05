@@ -17,19 +17,6 @@ library(dplyr)
 library(plotly)
 library(DT)
 library(knitr)
-
-# Initialize code chunk options
-opts_chunk$set(
-  warning = FALSE,
-  message = FALSE,
-  eval=TRUE,
-  echo = TRUE,
-  cache = FALSE,
-  fig.width = 7, 
-  fig.align = 'center',
-  fig.asp = 0.618,
-  out.width = "700px",
-  class.source = "code-r")
 ```
 
 ```{css, echo=FALSE}
@@ -164,13 +151,13 @@ p2_scatter <- cv_states_today_scatter %>%
 
 ### Figure 1
 
-```{r echo=FALSE}
+```{r,echo=FALSE, warning=FALSE}
 p1_scatter
 ```
 
 ### Figure 2
 
-```{r echo=FALSE}
+```{r,echo=FALSE,warning=FALSE}
 p2_scatter
 ```
 
