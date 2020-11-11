@@ -79,7 +79,7 @@ p2_scatter <- cv_states_today_scatter %>%
          hovermode = "compare")
 ```
 
-## Plots {.tabset}
+## ShowingPlots {.tabset}
 
 ### Figure 1
 
@@ -91,4 +91,153 @@ p1_scatter
 
 ```{r echo=FALSE}
 p2_scatter
+```
+
+## Assignment5 {.tabset}
+```{r, include=FALSE}
+library(data.table)
+library(dtplyr)
+library(dplyr)
+library(lubridate)
+library(leaflet)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(lubridate)
+library(qwraps2)
+library(plotly)
+```
+
+```{r, include=FALSE}
+# read in the datasets
+dt <- data.table::fread("/Users/SF/Desktop/Study/PM566/ca-oshpd-gachospital-buildingspcnpcratings-09252020.csv")
+
+# check the dimensions, headers and footers
+dim(dt)
+head(dt)
+tail(dt)
+
+# check the variable names and variable types
+str(dt)
+
+# check the key variables.
+colnames(dt)[colnames(dt) == 'County Code'] <- 'county'
+colnames(dt)[colnames(dt) == 'SPC Rating'] <- 'SPC'
+colnames(dt)[colnames(dt) == 'OSHPD NPC Rating'] <- 'NPC'
+
+table(dt$SPC)
+(sum(dt$SPC == 'N/A') + sum(dt$SPC == '-1')) / length(dt$SPC)
+dt <- dt[which(dt$SPC != 'N/A')]
+dt <- dt[which(dt$SPC != '-1')]
+dt$SPC <- substr(dt$SPC, 1, 1)
+table(dt$SPC)
+
+table(dt$NPC)
+(sum(dt$NPC == 'N/A') + sum(dt$NPC == 'NYA'))/ length(dt$NPC)
+dt <- dt[which(dt$NPC != 'N/A')]
+dt <- dt[which(dt$NPC != 'NYA')]
+table(dt$NPC)
+
+dt$SPC <- as.integer(dt$SPC)
+
+# only analyze those in-service buildings
+table(dt$`Building Status`)
+dt <- dt[which(dt$`Building Status` == 'In Service')]
+table(dt$`Building Status`)
+
+dt$NPC <- as.integer(dt$NPC)
+
+# check the number of counties and facilties
+length(unique(dt$county))
+length(unique(dt$`Facility Name`))
+dt$counid <- substr(dt$county, 1,2)
+
+# check the range of lattitude and longitude.
+summary(dt$Latitude)
+summary(dt$Longitude)
+```
+
+```{r, include=FALSE}
+# the number of buildings of every facility
+ctf_build <- table(dt$`Facility Name`)
+ctf_build_10 <- as.data.frame(head(sort(ctf_build, decreasing = TRUE),10))
+ctf_build_10
+
+
+# the average SPC of every facility
+meanf_spc <- sort(tapply(dt$SPC,dt$`Facility Name`,mean), decreasing = TRUE)
+meanf_spc5 <- as.data.frame(meanf_spc[which(meanf_spc==5)])
+topspc <- rownames(meanf_spc5)
+  
+# the average NPC of every facility
+meanf_npc <- sort(tapply(dt$NPC,dt$`Facility Name`,mean), decreasing = TRUE)
+meanf_npc5 <- meanf_npc[which(meanf_npc==5)]
+topnpc <- rownames(meanf_npc5)
+
+#find the best facility
+intersect(topspc, topnpc)
+
+# the average SPC of every county
+meanc_spc <- as.data.frame(sort(tapply(dt$SPC,dt$county,mean), decreasing = TRUE))
+meanc_spc$county_name <- rownames(meanc_spc)
+colnames(meanc_spc) <- c('Mean SPC', 'county_name')
+
+# the average NPC of every county
+meanc_npc <- as.data.frame(sort(tapply(dt$NPC,dt$county,mean), decreasing = TRUE))
+meanc_npc$county_name <- rownames(meanc_npc)
+colnames(meanc_npc) <- c('Mean NPC', 'county_name')
+
+# find the counties with best performance
+newtb <- merge(meanc_spc, meanc_npc, by= 'county_name')
+newtb$perf <- (newtb$`Mean SPC` + newtb$`Mean NPC`)/2
+county_top <- head(newtb[order(newtb[,4], decreasing = TRUE),],55)
+county_top <- as.data.table(county_top)
+
+# the number of facilities of LA
+countyf <- dt[,c("county","Facility Name")]
+countyf <- countyf[!duplicated(countyf),]
+tb <- as.data.frame(table(countyf$county))
+```
+
+### Barchart for the number of buildings in each facility
+```{r, echo=FALSE}
+p <- ggplot(ctf_build_10, mapping = aes(x = substr(as.character(Var1),1,7), y = Freq)) + geom_bar(stat = 'identity',fill = 'darkblue')
+ggplotly(p)
+```
+
+### Barchart for the number of facilities in each county
+```{r, echo=FALSE}
+ctc_faci_10 <- head(tb[order(tb[,2],decreasing = TRUE),],10)
+p <- ggplot(ctc_faci_10, mapping = aes(x = substr(as.character(Var1),1,10), y = Freq)) + geom_bar(stat = 'identity',fill = 'darkred') +xlab('county_ID')
+ggplotly(p)
+```
+
+### Scatter plot of SCP and NCP by county
+```{r,echo=FALSE}
+county_top %>% 
+           plot_ly(x = ~`Mean SPC`, y = ~`Mean NPC`, 
+                   type = 'scatter',
+                   mode = 'markers',
+                   color = ~county_name
+                   )
+```
+
+### Hopital distribution in CA
+```{r,echo=FALSE}
+leaflet(dt) %>%
+  addProviderTiles('OpenStreetMap') %>%
+  addCircles(lat=~Latitude, lng=~Longitude, radius = 0.01 ) 
+```
+
+### Summary table for SCP and NCP for all counties
+```{r, echo=FALSE}
+# summary table for scp, ncp for all counties
+# kable(county_top,'html',caption = 'Table1: Ordering Seismic Safety Performance For All Counties In CA')%>%
+  #kable_styling(bootstrap_options = c("striped", "hover"))%>%
+  #footnote(general = "perf=(Mean SPC+Mean NPC)/2 ")
+
+library(DT)
+tb <- county_top %>% select(county_name, `Mean SPC`, `Mean NPC`, perf)
+datatable(tb)
+
 ```
