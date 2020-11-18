@@ -6,17 +6,94 @@ output:
         toc: TRUE
         toc_float: TRUE
 ---
-<br>
-
-# Introduction
-In the past, many hospitals in California were damaged and evacuated due to earthquakes. Some even collapsed and led to death of patients. All told, the quake had placed a heavy burden on California’s hospital system. Therefore, the state officials demand that by 2030, the hospitals not only need to remain standing but can also continue to operate after the earthquakes. My objective is to identify the best general acute care hospitals in California with reference to Structural Performance Category (SPC) and Non-structural Performance Category (NPC), and to look at the distribution and overall seismic safety performance of California hospitals in 2020.
-
-- SPC: ratings range from 1 to 5 with SPC 1 assigned to buildings posing significant risk of collapse following a strong earthquake and SPC 5 assigned to buildings reasonably capable of providing services to the public following a strong earthquake 
-- NPC: ratings range from 1 to 5 with NPC 1 assigned to buildings where the safe and orderly evacuation following a strong earthquake cannot be assured and NPC 5 assigned to buildings capable of continued operation for 72 hours without any power, water and sewer services following a strong ground motion
 
 <br>
 
-# Results
+This is my PM566 Final Project website. 
+
+<br>
+
+```{r setup, message=FALSE, echo=FALSE, warning=FALSE}
+
+library(data.table)
+library(tidyverse)
+library(dplyr)
+library(plotly)
+library(DT)
+library(knitr)
+
+# Initialize code chunk options
+opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  eval=TRUE,
+  echo = TRUE,
+  cache = FALSE,
+  fig.width = 7, 
+  fig.align = 'center',
+  fig.asp = 0.618,
+  out.width = "700px",
+  class.source = "code-r")
+```
+
+```{css, echo = FALSE}
+.code-r { /* Code block */
+  font-size: 15px;
+}
+
+.code-r-small { /* Code block */
+  font-size: 10px;
+}
+```
+
+```{r load-data, echo=FALSE}
+source("process_COVID_data.R")
+```
+
+
+```{r plot1, class.source="code-r-small",echo=FALSE}
+
+p1_scatter <- cv_states_today %>% 
+  plot_ly(x = ~pop_density, y = ~deathsper100k,
+          type = 'scatter', mode = 'markers', color = ~state,
+          size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5),
+          hoverinfo = 'text',
+          text = ~paste( paste(state, ":", sep=""), paste(" Cases per 100k: ", per100k, sep="") , paste(" Deaths per 100k: ",
+                        deathsper100k, sep=""), sep = "<br>")) %>%
+  layout(title = "Population-normalized COVID-19 deaths vs. population density",
+                  yaxis = list(title = "Deaths per 100k"), xaxis = list(title = "Population Density"),
+         hovermode = "compare")
+
+# filter out "District of Columbia"
+cv_states_today_scatter <- cv_states_today %>% filter(state!="District of Columbia")
+
+p2_scatter <- cv_states_today_scatter %>% 
+  plot_ly(x = ~pop_density, y = ~deathsper100k,
+          type = 'scatter', mode = 'markers', color = ~state,
+          size = ~population, sizes = c(5, 70), marker = list(sizemode='diameter', opacity=0.5),
+          hoverinfo = 'text',
+          text = ~paste( paste(state, ":", sep=""), paste(" Cases per 100k: ", per100k, sep="") , paste(" Deaths per 100k: ",
+                        deathsper100k, sep=""), sep = "<br>")) %>%
+  layout(title = "Population-normalized COVID-19 deaths vs. population density",
+                  yaxis = list(title = "Deaths per 100k"), xaxis = list(title = "Population Density"),
+         hovermode = "compare")
+```
+
+## ShowingPlots {.tabset}
+
+### Figure 1
+
+```{r echo=FALSE}
+p1_scatter
+```
+
+### Figure 2
+
+```{r echo=FALSE}
+p2_scatter
+```
+
+## Assignment5 {.tabset}
 ```{r, include=FALSE}
 library(data.table)
 library(dtplyr)
@@ -122,24 +199,21 @@ countyf <- countyf[!duplicated(countyf),]
 tb <- as.data.frame(table(countyf$county))
 ```
 
-## Comparison of buildings and facilities
-### Barcharts for top 10 facilities with most buildings
+### Barchart for the number of buildings in each facility
 ```{r, echo=FALSE}
-p <- ggplot(ctf_build_10, mapping = aes(x = substr(as.character(Var1),1,50), y = Freq)) + geom_bar(stat = 'identity',fill = 'salmon2') + xlab('hospital name') + theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+p <- ggplot(ctf_build_10, mapping = aes(x = substr(as.character(Var1),1,7), y = Freq)) + geom_bar(stat = 'identity',fill = 'darkblue')
 ggplotly(p)
 ```
-Sharp Memorial Hospital, Torrance Memorial Medical Centre, Rady Children’s Hospital – San Diego and St. Joseph Hospital are the top four hospitals with most buildings in California. 
 
-### Barcharts for top 10 counties with most facilities
+### Barchart for the number of facilities in each county
 ```{r, echo=FALSE}
 ctc_faci_10 <- head(tb[order(tb[,2],decreasing = TRUE),],10)
-p <- ggplot(ctc_faci_10, mapping = aes(x = substr(as.character(Var1),1,30), y = Freq)) + geom_bar(stat = 'identity',fill = 'skyblue3') +xlab('county_ID') + theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+p <- ggplot(ctc_faci_10, mapping = aes(x = substr(as.character(Var1),1,10), y = Freq)) + geom_bar(stat = 'identity',fill = 'darkred') +xlab('county_ID')
 ggplotly(p)
 ```
-By 2020, there are 384 acute care hospitals (including different campuses) that are still in service in 55 counties in California state. Los Angeles county has the most hospitals (90), followed by Orange county (30) and San Bernardino county (23).  
 
-## SCP and NCP by county
-```{r,echo=FALSE,warning=FALSE}
+### Scatter plot of SCP and NCP by county
+```{r,echo=FALSE}
 county_top %>% 
            plot_ly(x = ~`Mean SPC`, y = ~`Mean NPC`, 
                    type = 'scatter',
@@ -147,18 +221,16 @@ county_top %>%
                    color = ~county_name
                    )
 ```
-In general, Amador, Kings, and Lassen are the three counties with the greatest overall seismic safety performance, with mean SPC and NPC ratings scoring 5 and 4 respectively. Colusa, Mariposa and Trinity, however, scores the lowest in CA, which only have 2 for SPC and 2 for NPC. 
 
-## Hospital distribution in CA
+### Hopital distribution in CA
 ```{r,echo=FALSE}
 leaflet(dt) %>%
   addProviderTiles('OpenStreetMap') %>%
   addCircles(lat=~Latitude, lng=~Longitude, radius = 0.01 ) 
 ```
-A majority of the facilities are located around Los Angeles and San Francisco. 
 
-## Summary table for SCP and NCP for all counties
-```{r, echo=FALSE,warning=FALSE}
+### Summary table for SCP and NCP for all counties
+```{r, echo=FALSE}
 # summary table for scp, ncp for all counties
 # kable(county_top,'html',caption = 'Table1: Ordering Seismic Safety Performance For All Counties In CA')%>%
   #kable_styling(bootstrap_options = c("striped", "hover"))%>%
@@ -169,10 +241,3 @@ tb <- county_top %>% select(county_name, `Mean SPC`, `Mean NPC`, perf)
 datatable(tb)
 
 ```
-
-<br>
-
-# Conclusion
-- Kaiser Foundation Hospital in San Diego is the best hospital in terms of seismic safety performance.  
-- Most of the hospitals in California are located around Los Angeles and San Francisco.  
-- Among all the counties in California, hospitals in Amador, Kings, and Lassen county have the best average NPC and SPC scores, while hospitals in Colusa, Mariposa and Trinity county socres the lowest.
